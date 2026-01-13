@@ -12,13 +12,13 @@ export default function TabsLayout() {
    const isComparePage = segments.includes("compare");
    const isProductDashboardPage = segments.includes("product-dashboard");
 
-   let activeRoute: "Home" | "Compare" | "Specials" | "My Lists" | "Profile" | "Product Dashboard" = "Home";
+   let activeRoute: "Home" | "Compare" | "Specials" | "My Lists" | "Profile" | "Dashboard" = "Home";
    if (isProfilePage) {
       activeRoute = "Profile";
    } else if (isComparePage) {
       activeRoute = "Compare";
    } else if (isProductDashboardPage) {
-      activeRoute = "Product Dashboard";
+      activeRoute = "Dashboard";
    }
 
    return (

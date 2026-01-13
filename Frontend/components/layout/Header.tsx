@@ -26,7 +26,7 @@ const navRoutes: Record<RouteKey, string> = {
    Compare: "/(tabs)/compare",
    Specials: "/specials",
    "My Lists": "/my-lists",
-   "Product Dashboard": "/(tabs)/product-dashboard",
+   Dashboard: "/(tabs)/product-dashboard",
    Profile: "/(tabs)/profile",
 };
 

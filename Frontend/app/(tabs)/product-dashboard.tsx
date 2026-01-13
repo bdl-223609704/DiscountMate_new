@@ -13,10 +13,10 @@ const ProductDashboard = () => {
          <View className="flex-1 items-center justify-center p-6 bg-[#F9FAFB]">
             <FontAwesome6 name="chart-line" size={48} color="#10B981" />
             <Text className="text-xl font-semibold text-gray-800 mt-4 mb-2 text-center">
-               Product Dashboard
+               Dashboard
             </Text>
             <Text className="text-gray-600 text-center">
-               The Product Dashboard is only available on web. Please open this page in a web browser to view the PowerBI dashboard.
+               The Dashboard is only available on web. Please open this page in a web browser to view the PowerBI dashboard.
             </Text>
          </View>
       );
@@ -35,10 +35,7 @@ const ProductDashboard = () => {
                      </svg>
                   </div>
                   <div>
-                     <h1 className="text-3xl font-bold text-gray-800">Product Dashboard</h1>
-                     <p className="text-gray-600 text-sm mt-1">
-                        Comprehensive analytics and insights for product performance
-                     </p>
+                     <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
                   </div>
                </div>
             </div>
@@ -86,7 +83,7 @@ const ProductDashboard = () => {
                      setHasError(true);
                   }}
                   sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
-                  title="Product Dashboard - PowerBI"
+                  title="Dashboard - PowerBI"
                   className="w-full"
                />
             </div>
