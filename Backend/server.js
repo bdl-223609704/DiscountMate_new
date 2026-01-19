@@ -1,5 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const os = require('os');
+const path = require('path');
+const fs = require('fs');
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const { connectToMongoDB } = require('./src/config/database');
 const userRoutes = require('./src/routers/user.router');
 const productRoutes = require('./src/routers/product.router');
@@ -9,14 +13,17 @@ const contactRoutes = require('./src/routers/contact.router');
 const basketRoutes = require('./src/routers/basket.router');
 const mlRoutes = require('./src/routers/ml.router');
 const analyticsRoutes = require('./src/routers/analytics.router');
-const path = require('path');
-const fs = require('fs');
 require('dotenv').config();
 
 const setupSwagger = require('./src/config/swagger');
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 8080;
+
+const uploadsDir = process.env.UPLOAD_DIR || path.join(os.tmpdir(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 const helmet =require('helmet');
 // Use Helmet to set security headers including Content Security Policy
@@ -39,25 +46,49 @@ app.use(cors({
     credentials: true
 }));
 
-// Ensure 'uploads' directory exists
-const uploadDir = path.resolve(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(uploadDir));
+app.use('/uploads', express.static(uploadsDir));
 
 // Initialize Swagger
 setupSwagger(app);
 
-// Connect to MongoDB with error handling
-connectToMongoDB().catch(err => {
-    console.error("Failed to connect to MongoDB:", err);
-    process.exit(1);
-});
+async function ensureMongoUri() {
+    if (process.env.MONGO_URI) {
+        return;
+    }
+
+    const secretName = process.env.MONGO_URI_SECRET_NAME || 'mongo-uri';
+    const client = new SecretManagerServiceClient();
+    const projectId = await client.getProjectId();
+    const secretVersionName = `projects/${projectId}/secrets/${secretName}/versions/latest`;
+
+    const [version] = await client.accessSecretVersion({ name: secretVersionName });
+    const payload = version.payload && version.payload.data
+        ? version.payload.data.toString('utf8')
+        : '';
+
+    if (!payload) {
+        throw new Error(`Secret ${secretName} is empty or unreadable`);
+    }
+
+    process.env.MONGO_URI = payload;
+}
+
+async function startServer() {
+    try {
+        await ensureMongoUri();
+        await connectToMongoDB();
+    } catch (err) {
+        console.error("Failed to initialize MongoDB:", err);
+        // process.exit(1);
+    }
+
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
 
 // Routes
 app.use('/api/users', userRoutes);
@@ -81,6 +112,4 @@ app.use((err, req, res, next) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+startServer();
