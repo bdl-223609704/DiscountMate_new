@@ -13,7 +13,10 @@ const contactRoutes = require('./src/routers/contact.router');
 const basketRoutes = require('./src/routers/basket.router');
 const mlRoutes = require('./src/routers/ml.router');
 const analyticsRoutes = require('./src/routers/analytics.router');
-require('dotenv').config();
+
+if (process.env.NODE_ENV !== 'production') {
+   require('dotenv').config();
+}
 
 const setupSwagger = require('./src/config/swagger');
 
@@ -55,25 +58,31 @@ app.use('/uploads', express.static(uploadsDir));
 setupSwagger(app);
 
 async function ensureMongoUri() {
-    if (process.env.MONGO_URI) {
-        return;
-    }
+   if (process.env.MONGO_URI && process.env.MONGO_URI.trim()) {
+      return;
+   }
 
-    const secretName = process.env.MONGO_URI_SECRET_NAME || 'mongo-uri';
-    const client = new SecretManagerServiceClient();
-    const projectId = await client.getProjectId();
-    const secretVersionName = `projects/${projectId}/secrets/${secretName}/versions/latest`;
+   const secretName = process.env.MONGO_URI_SECRET_NAME || 'mongo-uri';
+   const client = new SecretManagerServiceClient();
 
-    const [version] = await client.accessSecretVersion({ name: secretVersionName });
-    const payload = version.payload && version.payload.data
-        ? version.payload.data.toString('utf8')
-        : '';
+   // Prefer App Engine-provided project id
+   const projectId = process.env.GOOGLE_CLOUD_PROJECT || await client.getProjectId();
+   if (!projectId) {
+      throw new Error("GOOGLE_CLOUD_PROJECT is not set and projectId could not be resolved");
+   }
 
-    if (!payload) {
-        throw new Error(`Secret ${secretName} is empty or unreadable`);
-    }
+   const secretVersionName = `projects/${projectId}/secrets/${secretName}/versions/latest`;
 
-    process.env.MONGO_URI = payload;
+   const [version] = await client.accessSecretVersion({ name: secretVersionName });
+   const payload = version.payload && version.payload.data
+      ? version.payload.data.toString('utf8').trim()
+      : '';
+
+   if (!payload) {
+      throw new Error(`Secret ${secretName} is empty or unreadable`);
+   }
+
+   process.env.MONGO_URI = payload;
 }
 
 async function startServer() {
@@ -82,7 +91,7 @@ async function startServer() {
         await connectToMongoDB();
     } catch (err) {
         console.error("Failed to initialize MongoDB:", err);
-        // process.exit(1);
+        process.exit(1);
     }
 
     app.listen(PORT, () => {
