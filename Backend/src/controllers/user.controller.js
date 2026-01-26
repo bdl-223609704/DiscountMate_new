@@ -89,6 +89,7 @@ const signin = async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
     } catch (error) {
+        console.error('Error signing in user:', error);
         res.status(500).json({ message: 'Error signing in user' });
     }
 };

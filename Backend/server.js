@@ -88,8 +88,39 @@ async function ensureMongoUri() {
    console.log("MONGO_URI loaded:", Boolean(process.env.MONGO_URI));
 }
 
+async function ensureJwtSecret() {
+   if (process.env.JWT_SECRET && process.env.JWT_SECRET.trim()) {
+      return;
+   }
+
+   const secretName = process.env.JWT_SECRET_SECRET_NAME || "jwt-secret";
+   const client = new SecretManagerServiceClient();
+
+   // Prefer App Engine-provided project id
+   const projectId = process.env.GOOGLE_CLOUD_PROJECT || (await client.getProjectId());
+   if (!projectId) {
+      throw new Error("GOOGLE_CLOUD_PROJECT is not set and projectId could not be resolved");
+   }
+
+   const secretVersionName = `projects/${projectId}/secrets/${secretName}/versions/latest`;
+   const [version] = await client.accessSecretVersion({ name: secretVersionName });
+
+   const payload =
+      version.payload && version.payload.data
+         ? version.payload.data.toString("utf8").trim()
+         : "";
+
+   if (!payload) {
+      throw new Error(`Secret ${secretName} is empty or unreadable`);
+   }
+
+   process.env.JWT_SECRET = payload;
+   console.log("JWT_SECRET loaded:", Boolean(process.env.JWT_SECRET));
+}
+
 async function startServer() {
    try {
+      await ensureJwtSecret();
       await ensureMongoUri();
 
       // Require AFTER MONGO_URI is set

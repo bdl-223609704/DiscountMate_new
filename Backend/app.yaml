@@ -5,3 +5,4 @@ entrypoint: node server.js
 env_variables:
   PORT: "8080"
   MONGO_URI_SECRET_NAME: "mongo-uri"
+  JWT_SECRET_SECRET_NAME: "jwt-secret"
